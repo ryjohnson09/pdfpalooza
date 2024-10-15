@@ -1,0 +1,170 @@
+---
+title: "United States"
+output: pdf_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE
+)
+```
+
+
+```{r include=FALSE}
+library(gapminder)
+library(tidyverse)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(stringdist)
+library(gt)
+
+# Variables
+country_focus <- "United States"
+date_range <- c(1952, 2007)
+```
+
+
+```{r}
+# Load world country data
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Get list of country names
+country_names <- world$admin
+
+# Get the closest country name
+country_closest_match <- country_names[which.min(stringdist::stringdist(country_focus, country_names, method = "jaccard", q = 3))]
+
+# Filter data for a specific country (e.g., France)
+country_data <- subset(world, name == country_closest_match)
+
+# Plot the country map using ggplot2
+ggplot(data = world) +
+  geom_sf(fill = "lightgray", color = "white") + # Plot all countries with a base color
+  geom_sf(data = country_data, fill = "darkblue", color = "black") + # Highlight the specific country
+  theme_minimal() +
+  labs(title = country_focus)
+```
+
+This report explores the socio-economic development trends of `r country_focus` using the Gapminder dataset. By examining key indicators such as life expectancy, GDP per capita, and population over time, this report provides insights into the country's progress in health, economic growth, and demographic changes. Through a data-driven approach, we aim to understand the factors influencing the country's development trajectory and uncover patterns that have shaped its current socio-economic status. This analysis will offer a comprehensive overview of the country's development story and its position within the global context.
+
+## Analysis
+
+### Quick Overview
+The below table shows shows the reported life expectancy, population, and GDP per Capital values for `r country_focus`.
+
+```{r lif-exp-table, tab.cap="Country data overview table."}
+
+# Filter gapminder by date
+gapminder_filt <- gapminder |> 
+  filter(year >= date_range[1] & year <= date_range[2])
+
+# Filter the dataset for the specific country
+country_data <- gapminder_filt |> 
+  filter(country == country_focus) |> 
+  select(-country, -continent)
+
+country_data |> 
+  gt(rowname_col = "year") |> 
+  fmt_number(
+    columns = c(pop, gdpPercap),
+    suffixing = TRUE
+  ) |> 
+  fmt_number(
+    columns = lifeExp,
+    decimals = 1
+  ) |> 
+  data_color(
+    columns = c(lifeExp),
+    palette = scales::viridis_pal()(10),
+    domain = c(min(gapminder_filt$lifeExp), 
+               max(gapminder_filt$lifeExp))
+    ) |> 
+  cols_label(
+    lifeExp =md("**Life Expectancy**"),
+    pop = md("**Population**"),
+    gdpPercap = md("**GDP per Capital**")) |> 
+  # tab_style(
+  #   style = cell_text(align = "center"),  # Center-align the text
+  #   locations = cells_column_labels(everything())  # Apply to all column labels
+  # ) |> 
+  tab_header(
+    title = paste(country_focus, "Overview"),
+    subtitle = "Data shown by year reported in the gapminder dataset"
+  )
+```
+
+### Life Expectancy
+
+The life expectancy data from the Gapminder dataset reveals the average number of years a newborn is expected to live, assuming that current mortality rates remain constant throughout their lifetime. This metric serves as a critical indicator of public health and overall living conditions, reflecting factors such as access to healthcare, nutrition, sanitation, and social stability. By examining trends in life expectancy over time, we can gain insights into how improvements or declines in these areas have impacted the population's health and longevity, highlighting the progress made or challenges faced by the country in enhancing the quality of life for its citizens.
+
+In @ref(fig:fig-life-expectancy), we can view the life expectancy of `r country_focus` compared to every other country in the gapminder dataset.
+
+```{r fig-life-exectancy, fig.cap="Life expectancy plot. Focus country is shown in orange. Every other country is shown in grey."}
+
+ggplot(gapminder_filt, aes(x = year, y = lifeExp, group = country)) +
+      geom_line(aes(color = ifelse(country == country_focus, country_focus, "Other")),
+                linewidth = ifelse(gapminder_filt$country == country_focus, 1.5, 0.7), 
+                alpha = ifelse(gapminder_filt$country == country_focus, 1, 0.3)) +
+      scale_color_manual(values = setNames(c("gray", "#EE6331"), c("Other", country_focus))) +
+      labs(title = paste(country_focus, "Life Expectancy"),
+           x = "Year",
+           y = "Life Expectancy (years)",
+           color = "Country") +
+      theme_minimal() +
+      theme(
+        legend.position = "none"
+      )
+```
+
+## Population
+
+The population data from the Gapminder dataset reflects the total number of people residing within its borders for each recorded year, spanning from 1952 to 2007. This data provides a historical view of the country's demographic changes, including periods of growth or decline, which can be influenced by factors such as birth rates, death rates, and migration patterns. Analyzing these trends helps us understand how the population has evolved over time, offering insights into social, economic, and political shifts that may have impacted the country’s demographic landscape. This information is crucial for understanding the country's development dynamics and planning for future needs and challenges.
+
+In @ref(fig:fig-population), we can view the population of `r country_focus` compared to every other country in the gapminder dataset.
+
+```{r fig-population, fig.cap="Population plot. Focus country is shown in orange. Every other country is shown in grey."}
+
+ggplot(gapminder_filt, aes(x = year, y = pop, group = country)) +
+      geom_line(aes(color = ifelse(country == country_focus, country_focus, "Other")),
+                linewidth = ifelse(gapminder_filt$country == country_focus, 1.5, 0.7), 
+                alpha = ifelse(gapminder_filt$country == country_focus, 1, 0.3)) +
+      scale_color_manual(values = setNames(c("gray", "#EE6331"), c("Other", country_focus))) +
+      scale_y_log10() +
+      labs(title = paste(country_focus, "Population"),
+           x = "Year",
+           y = "Population",
+           color = "Country") +
+      theme_minimal() +
+      theme(
+        legend.position = "none"
+      )
+```
+
+## GDP Per Cap
+
+The GDP per capita data from the Gapminder dataset provides a measure of the average economic output per person for a specific country, adjusted for inflation and expressed in international dollars. This indicator reflects the country's overall economic performance by dividing the total Gross Domestic Product (GDP) by its population size. Analyzing GDP per capita over time allows us to observe trends in economic growth and development, helping to identify periods of expansion or recession. The data offers valuable insights into the standard of living, economic health, and changes in wealth distribution over the analyzed period.
+
+In @ref(fig:fig-gdp), we can view the population of `r country_focus` compared to every other country in the gapminder dataset.
+
+```{r fig-gdp, fig.cap="GDP Per Cap plot. Focus country is shown in orange. Every other country is shown in grey. GDP per capita measures the value of everything produced in a country during a year, divided by the number of people. The unit is constant dollars adjusted for inflation in 2017’s prices."}
+
+ggplot(gapminder_filt, aes(x = year, y = gdpPercap, group = country)) +
+      geom_line(aes(color = ifelse(country == country_focus, country_focus, "Other")),
+                linewidth = ifelse(gapminder_filt$country == country_focus, 1.5, 0.7), 
+                alpha = ifelse(gapminder_filt$country == country_focus, 1, 0.3)) +
+      scale_color_manual(values = setNames(c("gray", "#EE6331"), c("Other", country_focus))) +
+      scale_y_log10() +
+      labs(title = paste(country_focus, "GDP per Cap"),
+           x = "Year",
+           y = "GDP Per Cap",
+           color = "Country") +
+      theme_minimal() +
+      theme(
+        legend.position = "none"
+      )
+```
+
+## About Gapminder
+The Gapminder dataset is a widely used collection of data that provides a comprehensive view of global development trends over time. Compiled by the Gapminder Foundation, a non-profit organization focused on sustainable global development, this dataset includes key socio-economic indicators across multiple countries and regions from 1952 to 2007.
+
+
