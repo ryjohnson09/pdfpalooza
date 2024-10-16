@@ -1,19 +1,22 @@
 ---
-format: 
-    typst:
-        papersize: a3
-        margin:
-            x: 1cm
-            y: 1cm
-        columns: 2
+format:
+  poster-typst: 
+    size: "34x22"
+    poster-authors: "R. Johnson, R. Dempsey"
+    departments: "Posit Department of Awesome"
+    institution-logo: "logo-team-horiz-full-color.png"
+    footer-text: "posit::workflow(Oct 2024)"
+    footer-url: "https://pos.it/team-demo"
+    footer-emails: "ryan@posit.co"
+    footer-color: "EE6331"
 execute: 
   echo: false
 params:
     country_focus: "Peru"
     date_range: [1952, 2000]
-title: "**{{< meta params.country_focus >}}**: Life Expectancy, Income, and Population: A Data-Driven Exploration"
-
+title: "Life Expectancy, Income, and Population: A Data-Driven Exploration"
 ---
+
 ## Introduction
 
 ```{r}
@@ -29,6 +32,8 @@ library(gt)
 ```
 
 ```{r}
+#| fig-align: center
+
 # Load world country data
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
